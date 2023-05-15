@@ -147,3 +147,78 @@ def check_error(input_list):
             else:
                 f2.write("Illegal use of flag register \n")
                 error=1
+        elif i[0] not in opcode:
+            error=1
+            f2.write("Error in line no:"+str(i)+str(copy_list.index(i)+1)+"\n")
+        else:
+            newstmtyp=stmtypes[i[0]]
+            if newstmtyp=='A':
+                for j in i[1:]:
+                    if j not in register:
+                        error=1
+                        f2.write("Invalid Register"+str(i)+str(copy_list.index(i)+1)+"\n")
+                    else :
+                        continue
+            elif newstmtyp=='B':
+                if i[1] not in register:
+                    error=1
+                    f2.write("Invalid register"+str(i)+str(copy_list.index(i)+1)+"\n")
+                elif (i[2][1:].isdigit() and (int (i[2][1:])>127 or int(i[2][1:])<0)):
+                    error=1
+                    f2.write("Invalid Imm value"+str(i)+str(copy_list.index(i)+1)+"\n")
+            elif newstmtyp=='C':
+                for k in i[1:]:
+                    if k not in register:
+                        error=1
+                        f2.write("Invalid Register"+str(i)+str(copy_list.index(i)+1)+"\n")       
+                    else:
+                        continue
+            elif newstmtyp=="D":
+                if i[1] not in register:
+                    error=1
+                    f2.write("Invalid register"+str(i)+str(copy_list.index(i)+1)+"\n")
+                elif i[2] not in variables:
+                    error=1
+                    f2.write("Invalid varibale"+str(i)+str(copy_list.index(i)+1)+"\n")
+            elif newstmtyp=="E":
+                if i[1] not in labels: 
+                    error=1
+                    f2.write("label not found "+str(i)+str(copy_list.index(i)+1)+str('\n'))
+                else:
+                    continue
+            elif newstmtyp=='F':
+                if (copy_list.index(i)+1)<len(copy_list):
+                    error=1
+                    f2.write("hlt is not being used at last \n")
+                else:
+                    continue
+            count+=1
+
+
+check_error(input_list)
+   
+if error == 0:
+    binarycode=''
+    for i in input_list:
+        oprtins=i[0]
+        if oprtins=="mov":  # for move 
+            if i[2][0]=="$":
+                oprtins="mov1"
+            else:
+                oprtins="mov2"
+        if oprtins=="var":
+            continue
+        else:
+            newstmtyp=stmtypes[oprtins]
+        # f2.write(newstmtyp,oprtins)
+
+        #TYPE A
+        if newstmtyp=="A":
+            register_1_name = i[1]
+            register_2_name = i[2]
+            register_3_name = i[3]
+            if i[0]== "add":
+                binarycode += "0000000"
+            elif i[0]== "sub":
+                binarycode += "0000100"
+            elif i[0]== "mul":
