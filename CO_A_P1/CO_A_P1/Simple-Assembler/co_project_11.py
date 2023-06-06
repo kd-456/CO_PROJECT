@@ -1,5 +1,6 @@
 import sys
 import re
+import  struct 
 # f=open("test.txt",'r')
 # f2=open("test_result.txt",'w')
 input_list=[]
@@ -12,25 +13,15 @@ labels_val=[]
 opcode={'add':'00000','sub':'00001','mov1':'00010','mov2':'00011','ld':'00100','st':'00101',
         'mul':'00110','div':'00111','rs':'01000','ls':'01001','xor':'01010','or':'01011',
         'and':'01100','not':'01101','cmp':'01110','jmp':'01111','jlt':'11100','jgt':'11101',
-        'je':'11111','hlt':'11010'}
+        'je':'11111','hlt':'11010','addf':'10000','subf':'10001','movf':'10010'}
 register={'R0':'000','R1':'001','R2':'010','R3':'011','R4':'100','R5':'101','R6':'110','FLAGS':'111'}
 register1={'R0':0,'R1':0,'R2':0,'R3':0,'R4':0,'R5':0,'R6':0}
 flags = {'V': 0, 'L': 0, 'G': 0, 'E': 0}
-stmtypes = {"add": "A", "sub": "A", "mov1": "B", "mov2": "C", "ld": "D", "st": "D", 
+stmtypes = {"add": "A", "sub": "A","addf": "A","subf": "A", "mov1": "B", "mov2": "C", "ld": "D", "st": "D", 
             "mul": "A", "div": "C", "rs": "B","ls": "B", "xor": "A", "or": "A",
              "and": "A", "not": "C", "cmp": "C", "jmp": "E", "jlt": "E", "jgt": "E",
-             "je": "E", "hlt": "F",}
+             "je": "E", "hlt": "F",'movf':"B"}
 
-# for line in f:
-#     input_list.append(line.strip().split(' '))
-# lines=[]
-# for line in f:
-#     line =line.strip()
-#     if not  line:
-#         continue #remove whit e
-#     splt=[splt.strip() for splt in line.split()]
-#     input_list.append(splt)# splititng into variable ....
-# print(input_list)
 s=sys.stdin.read()
 L=s.split("\n")
 for line in L:
@@ -39,6 +30,7 @@ for line in L:
         continue #remove whit e
     splt=[splt.strip() for splt in line.split()]
     input_list.append(splt)# splititng into variable ....
+
 
 def var_error(list):
     var_error=0
@@ -51,21 +43,23 @@ def var_error(list):
     else:
         var_error=1
         return var_error
+#print(input_list)
 
 for i in input_list:
+    # print(i)
     if i[0][-1]==':':
-        labels.append(i[0][:-1]) 
-
-
-    if i[0]=='mov':
+        labels.append(i[0][:-1])
         
-
-        if (i[2][1]=='$'):
+    if i[0]=='mov':
+        if (i[2][0]=='$'):
             register1[i[1]]=int(i[2][1:])
             answer.append(opcode['mov1'])
+            i[0]="mov1"
 
         else:
             answer.append(opcode['mov2'])
+            i[0]="mov2"
+    
     if i[0] in opcode:
         answer.append(opcode[i[0]])
     if i[0]=='var':
@@ -89,6 +83,9 @@ for i in input_list:
         if len(bin(register1[i[1]])[2:])>len(bin(register1[i[2]])[2:]) or len(bin(register1[i[1]])[2:]) > len (bin(register1[i[3]])[2:]):
             flags['V']=1
             register1[i[1]]=0
+    
+    # if i[0]=='addf' and len(i)==4:
+
 
     #CHECKING FOR OVERFLOW IN SUBTRACT
     elif i[0]=='sub' and len(i)==4:
@@ -136,7 +133,7 @@ for i in range(len(variables)):
 
 # print(variables)
 # print(len(input_list))
-# print(labels_val)
+#print(input_list)
 # print(var_value)
 error=0
 def check_error(input_list):
@@ -144,12 +141,12 @@ def check_error(input_list):
     count=1
     count_1=0
     if ['hlt'] not in input_list:
-        print("Missing hlt instructions ")
+        print("Missing hlt instructions")
         error=1
     for i in input_list:
         if i[0]=='var':
             if var_error(input_list)==1 and count_1==0:
-                print("Variable not declared in the beginning ")
+                print("Variable not declared in the beginning")
                 error=1
                 count_1=1
            
@@ -157,51 +154,57 @@ def check_error(input_list):
             if i[1] in register and (i[2]=="FLAGS" or i[2][0]=='$' or i[2] in register):
                 continue
             else:
-                print("Illegal use of flag register ")
+                print("Illegal use of flag register")
                 error=1
         elif i[0] not in opcode:
             error=1
-            print("Error in line no:"+str(i)+str(copy_list.index(i)+1)+"")
+            print("Error in line no:"+str(i)+str(copy_list.index(i)+1))
         else:
             newstmtyp=stmtypes[i[0]]
+            #print(newstmtyp)
             if newstmtyp=='A':
                 for j in i[1:]:
                     if j not in register:
                         error=1
-                        print("Invalid Register"+str(i)+str(copy_list.index(i)+1)+"")
+                        print("Invalid Register"+str(i)+str(copy_list.index(i)+1))
                     else :
                         continue
             elif newstmtyp=='B':
-                if i[1] not in register:
-                    error=1
-                    print("Invalid register"+str(i)+str(copy_list.index(i)+1)+"")
-                elif (i[2][1:].isdigit() and (int (i[2][1:])>127 or int(i[2][1:])<0)):
-                    error=1
-                    print("Invalid Imm value"+str(i)+str(copy_list.index(i)+1)+"")
+                if i[0]=='movf':
+                    if float(i[2][1:])>31.5 or float(i[2][1:])<0:
+                        error=1
+                        print("Invalid Imm value"+str(i)+str(copy_list.index(i)+1))
+                else:
+                    if i[1] not in register:
+                        error=1
+                        print("Invalid register"+str(i)+str(copy_list.index(i)+1))
+                    elif (i[2][1:].isdigit() and (int (i[2][1:])>127 or int(i[2][1:])<0)):
+                        error=1
+                        print("Invalid Imm value"+str(i)+str(copy_list.index(i)+1))
             elif newstmtyp=='C':
                 for k in i[1:]:
                     if k not in register:
                         error=1
-                        print("Invalid Register"+str(i)+str(copy_list.index(i)+1)+"")       
+                        print("Invalid Register"+str(i)+str(copy_list.index(i)+1))       
                     else:
                         continue
             elif newstmtyp=="D":
                 if i[1] not in register:
                     error=1
-                    print("Invalid register"+str(i)+str(copy_list.index(i)+1)+"")
+                    print("Invalid register"+str(i)+str(copy_list.index(i)+1))
                 elif i[2] not in variables:
                     error=1
-                    print("Invalid varibale"+str(i)+str(copy_list.index(i)+1)+"")
+                    print("Invalid varibale"+str(i)+str(copy_list.index(i)+1))
             elif newstmtyp=="E":
                 if i[1] not in labels: 
                     error=1
-                    print("label not found "+str(i)+str(copy_list.index(i)+1)+str(''))
+                    print("label not found "+str(i)+str(copy_list.index(i)+1))
                 else:
                     continue
             elif newstmtyp=='F':
                 if (copy_list.index(i)+1)<len(copy_list):
                     error=1
-                    print("hlt is not being used at last ")
+                    print("hlt is not being used at last")
                 else:
                     continue
             count+=1
@@ -209,13 +212,14 @@ def check_error(input_list):
 
 check_error(input_list)
    
-if error == 0:
+if error==0:
     binarycode=''
     for i in input_list:
         oprtins=i[0]
         if oprtins=="mov":  # for move 
             if i[2][0]=="$":
                 oprtins="mov1"
+                
             else:
                 oprtins="mov2"
         if oprtins=="var":
@@ -241,6 +245,10 @@ if error == 0:
                 binarycode += "0101100"
             elif i[0]== "and":
                 binarycode += "0110000"
+            elif i[0]== "addf":
+                binarycode += "1000000"
+            elif i[0]== "subf":
+                binarycode += "1000100"
             if register_1_name in register:
                 binarycode += register[register_1_name]
             if register_2_name in register:
@@ -255,15 +263,68 @@ if error == 0:
             register_1_name = i[1]
             if oprtins == "mov1":
                 binarycode += "000100"
+            if oprtins=="movf":
+                binarycode += "10010" 
+                var=  i[2][1:]
+                # print(var)
+                decimal= str(var)
+                integer,fractional=  decimal.split(".")
+                fractional_int=int(fractional)
+                # print(integer)
+                # print(fractional)
+                if register_1_name in register:
+                    binarycode += register[register_1_name]
+                binary_imm_int = str(bin(int(integer))[2:])
+                binary_imm_fra=""
+                for j in range(3):
+                    fractional_int=int(fractional_int)*2
+                    # print(fractional_int)
+                    if (int(fractional_int)>=10):
+                        binary_imm_fra += "1"
+                    else:
+                        binary_imm_fra += "0"
+                    fractional_int=int(fractional_int)-10
+                # print(binary_imm_int)
+                # print(binary_imm_fra)
+                a=binary_imm_int+binary_imm_fra
+                # print(a)
+                exponent=int(len(binary_imm_int))-1
+                exponent=str(exponent)
+                z=bin(int(exponent))
+                mantissa=a[1:6]
+                mantisa=len(mantissa)
+                # print(mantissa)
+                if mantisa!=5 and exponent!=3 :
+                    exp="0"*(3-len(z[2:]))+z[2:]
+                    mn="0"*(5-len(mantissa))+mantissa
+                    binarycode+=str(exp)
+                    binarycode+=mn
+                elif mantisa!=5 and exponent ==3 :
+                    exp=a[0:3]
+                    mn="0"*(5-len(mantissa))+mantissa
+                    binarycode+=str(exp)
+                    binarycode+=mn
+                elif mantisa==5 and exponent!=3:
+                    exp="0"*(3-len(z[2:]))+z[2:]
+                    mn=a[1:6]
+                    binarycode+=str(exp)
+                    binarycode+=mn
+                elif mantisa==5 and exponent==3:
+                    exp=a[0:3]
+                    mn=a[1:6]
+                    binarycode+=str(exp)
+                    binarycode+=mn
+                print(binarycode + "")
             elif i[0]== "rs":
                 binarycode += "010000"
             elif i[0]== "ls":
                 binarycode += "010010"
-            if register_1_name in register:
-                binarycode += register[register_1_name]
-            binary_imm = str(bin(int(i[2][1:]))[2:])
-            binarycode+="0"*(7-len(binary_imm))+binary_imm
-            print(binarycode + "")
+            elif oprtins == "mov1" or i[0]== "ls" or "rs":
+                if register_1_name in register:
+                    binarycode += register[register_1_name]
+                binary_imm = str(bin(int(i[2][1:]))[2:])
+                binarycode+="0"*(7-len(binary_imm))+binary_imm
+                print(binarycode + "")
             binarycode=''
         # imm value
 
@@ -316,3 +377,4 @@ if error == 0:
             print(binarycode+"")
             
 # print(binarycode)
+# print(labels)
